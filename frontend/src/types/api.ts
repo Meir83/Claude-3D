@@ -38,7 +38,30 @@ export interface ChatStreamEvent {
   data: string;
 }
 
-// Local UI-only message type (pre-ID assignment during streaming)
+// ── Providers ─────────────────────────────────────────────────────────────────
+
+export type ProviderId = "claude" | "gemini" | "ollama";
+
+export interface ProviderModel {
+  id: string;
+  name: string;
+  default?: boolean;
+}
+
+export interface Provider {
+  name: string;
+  models: ProviderModel[];
+  requires_key: boolean;
+  key_env: string | null;
+  free: boolean;
+  available: boolean;
+  default_model: string;
+}
+
+export type ProvidersMap = Record<ProviderId, Provider>;
+
+// ── Local UI-only message type ─────────────────────────────────────────────────
+
 export interface UIMessage {
   id: string;          // temp or db id as string
   role: MessageRole;

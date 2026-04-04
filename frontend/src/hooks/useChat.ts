@@ -7,6 +7,8 @@ import { useWorkspaceStore } from "@/store/workspace";
 export function useChat() {
   const {
     sessionId,
+    selectedProvider,
+    selectedModel,
     isStreaming,
     setIsStreaming,
     addMessage,
@@ -32,7 +34,7 @@ export function useChat() {
       setIsStreaming(true);
 
       try {
-        const response = await api.chatStream(sessionId, text);
+        const response = await api.chatStream(sessionId, text, selectedProvider, selectedModel ?? undefined);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -91,7 +93,7 @@ export function useChat() {
       }
     },
     [
-      sessionId, isStreaming,
+      sessionId, selectedProvider, selectedModel, isStreaming,
       addMessage, appendToLastAssistantMessage, setLastAssistantJobId,
       finaliseAssistantMessage, setIsStreaming, upsertJob,
       setActiveJobId, setViewerMode, setToastError,

@@ -1,4 +1,4 @@
-import { Job, Session } from "@/types/api";
+import { Job, Session, ProvidersMap } from "@/types/api";
 
 const BASE = "/api/v1";
 
@@ -16,11 +16,16 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   /** Start a streaming chat request. Returns the raw Response for SSE parsing. */
-  chatStream(sessionId: string, message: string): Promise<Response> {
+  chatStream(
+    sessionId: string,
+    message: string,
+    provider: string = "claude",
+    model?: string,
+  ): Promise<Response> {
     return fetch(`${BASE}/chat/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionId, message }),
+      body: JSON.stringify({ session_id: sessionId, message, provider, model }),
     });
   },
 
@@ -50,6 +55,10 @@ export const api = {
 
   stepUrl(jobId: string): string {
     return `${BASE}/files/${jobId}/step`;
+  },
+
+  getProviders(): Promise<ProvidersMap> {
+    return apiFetch<ProvidersMap>("/providers");
   },
 
   healthCheck(): Promise<{ status: string }> {

@@ -1,11 +1,21 @@
 import { create } from "zustand";
-import { UIMessage, Job, JobStatus } from "@/types/api";
+import { UIMessage, Job, ProviderId, ProvidersMap } from "@/types/api";
 
 interface WorkspaceState {
   // Session
   sessionId: string;
   sessionTitle: string | null;
   setSessionTitle: (title: string) => void;
+
+  // Provider selection
+  selectedProvider: ProviderId;
+  selectedModel: string | null;  // null = use provider default
+  providers: ProvidersMap | null;
+  providersLoading: boolean;
+  setSelectedProvider: (provider: ProviderId, model?: string) => void;
+  setSelectedModel: (model: string | null) => void;
+  setProviders: (p: ProvidersMap) => void;
+  setProvidersLoading: (v: boolean) => void;
 
   // Messages
   messages: UIMessage[];
@@ -52,10 +62,27 @@ function getOrCreateSessionId(): string {
   return id;
 }
 
-export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
+function getStoredProvider(): ProviderId {
+  if (typeof window === "undefined") return "claude";
+  return (localStorage.getItem("claude3d_provider") as ProviderId) || "claude";
+}
+
+export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   sessionId: getOrCreateSessionId(),
   sessionTitle: null,
   setSessionTitle: (title) => set({ sessionTitle: title }),
+
+  selectedProvider: getStoredProvider(),
+  selectedModel: null,
+  providers: null,
+  providersLoading: false,
+  setSelectedProvider: (provider, model) => {
+    if (typeof window !== "undefined") localStorage.setItem("claude3d_provider", provider);
+    set({ selectedProvider: provider, selectedModel: model ?? null });
+  },
+  setSelectedModel: (model) => set({ selectedModel: model }),
+  setProviders: (p) => set({ providers: p }),
+  setProvidersLoading: (v) => set({ providersLoading: v }),
 
   messages: [],
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),

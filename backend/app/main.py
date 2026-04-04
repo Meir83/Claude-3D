@@ -13,7 +13,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.database import create_tables
-from app.routers import chat, jobs, files
+from app.routers import chat, jobs, files, providers
 from app.utils.rate_limit import limiter
 from app.workers.cad_worker import start_workers
 
@@ -72,6 +72,7 @@ async def security_headers(request: Request, call_next):  # type: ignore[no-unty
 app.include_router(chat.router)
 app.include_router(jobs.router)
 app.include_router(files.router)
+app.include_router(providers.router)
 
 
 # ── Health ──────────────────────────────────────────────────────────────────

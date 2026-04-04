@@ -18,7 +18,7 @@ from app.models.job import GenerationJob, JobStatus
 from app.models.message import ChatMessage, MessageRole
 from app.models.session import ChatSession
 from app.schemas.chat import ChatRequest, SessionOut
-from app.services.claude import stream_chat
+from app.services.llm import stream_chat
 from app.services.job_queue import job_queue
 from app.utils.file_manager import job_script_path
 from app.utils.rate_limit import limiter
@@ -84,7 +84,7 @@ async def chat_stream(
         assistant_content = ""
         job_id_created: str | None = None
 
-        async for event in stream_chat(history):
+        async for event in await stream_chat(history, provider=body.provider, model=body.model):
             if event.event == "delta":
                 assistant_content += event.data
                 yield event.to_sse()

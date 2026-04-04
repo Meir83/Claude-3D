@@ -1,6 +1,7 @@
 "use client";
 import { useWorkspaceStore } from "@/store/workspace";
 import { Box, Cpu } from "lucide-react";
+import { ProviderSelector } from "./ProviderSelector";
 
 export function AppHeader() {
   const { sessionTitle, activeJobId, jobs } = useWorkspaceStore();
@@ -29,18 +30,13 @@ export function AppHeader() {
       )}
 
       <div className="ml-auto flex items-center gap-3">
-        {activeJob && (
+        {activeJob && activeJob.status === "running" && (
           <div className="flex items-center gap-1.5 text-xs text-surface-400">
-            <Cpu className="w-3.5 h-3.5" />
-            <span>
-              {activeJob.status === "running"
-                ? "Generating…"
-                : activeJob.status === "pending"
-                ? "Queued"
-                : null}
-            </span>
+            <Cpu className="w-3.5 h-3.5 animate-pulse" />
+            <span>Generating…</span>
           </div>
         )}
+        <ProviderSelector />
       </div>
     </header>
   );
