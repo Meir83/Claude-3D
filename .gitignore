@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+dist/
+build/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Backend storage (generated artifacts)
+backend/storage/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+
+# OS
+.DS_Store
+*.swp
+Thumbs.db
