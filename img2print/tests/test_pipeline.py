@@ -55,3 +55,33 @@ def test_to_heightmap_invert(simple_logo_path: str):
     hmap = to_heightmap(img, invert=False)
     hmap_inv = to_heightmap(img, invert=True)
     assert np.allclose(hmap + hmap_inv, 1.0, atol=0.01)
+
+
+@pytest.mark.skipif(
+    not __import__("importlib").util.find_spec("bpy"),
+    reason="bpy not installed",
+)
+def test_pipeline_run_fabric(israel_flag_path: str, tmp_path):
+    """End-to-end: pipeline.run() → STL exists, stats populated, no unhandled exception."""
+    import os
+
+    from img2print.core.pipeline import run
+
+    result = run(
+        israel_flag_path,
+        "fabric",
+        {
+            "panel_width_mm": 60.0,
+            "panel_thickness_mm": 2.0,
+            "relief_depth_mm": 0.4,
+            "subdivision_level": 32,
+            "invert": False,
+            "smoothing": 0.2,
+            "add_border": False,
+        },
+        output_dir=str(tmp_path),
+    )
+
+    assert os.path.exists(result.mesh_path)
+    assert result.stats.get("triangle_count", 0) > 0
+    # Warnings from validator are acceptable; errors would raise exceptions.

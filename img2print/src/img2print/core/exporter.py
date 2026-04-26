@@ -49,6 +49,19 @@ def export_3mf(output_path: str) -> str:
     return fallback
 
 
+def count_stl_triangles(stl_path: str) -> int:
+    """Read triangle count from the binary STL header (fast, no trimesh needed)."""
+    import struct
+
+    try:
+        with open(stl_path, "rb") as f:
+            f.seek(80)
+            (count,) = struct.unpack("<I", f.read(4))
+        return count
+    except Exception:
+        return -1
+
+
 def make_output_paths(output_dir: str, style_name: str, basename: str) -> dict[str, str]:
     """Build predictable output file paths."""
     import time

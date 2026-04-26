@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from PIL import Image
+from PIL import Image, ImageDraw
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -28,6 +28,22 @@ def simple_logo_path(tmp_path: Path) -> str:
     cv2.rectangle(img, (20, 20), (50, 50), (200, 0, 0), -1)
     out = tmp_path / "simple_logo.png"
     cv2.imwrite(str(out), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    return str(out)
+
+
+@pytest.fixture
+def portrait_path(tmp_path: Path) -> str:
+    """Simple portrait-like test image."""
+    fixture = FIXTURES_DIR / "portrait.jpg"
+    if fixture.exists():
+        return str(fixture)
+    # Fallback synthetic portrait.
+    img = Image.new("RGB", (256, 256), "#F5DEB3")
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([96, 80, 116, 100], fill="black")
+    draw.ellipse([140, 80, 160, 100], fill="black")
+    out = tmp_path / "portrait.jpg"
+    img.save(str(out))
     return str(out)
 
 
