@@ -75,6 +75,17 @@ export function useChat() {
               break;
             }
 
+            case "repair": {
+              // Build failed; the backend is asking the model to fix it.
+              let label = "Build failed — fixing automatically…";
+              try {
+                const { attempt, max_attempts } = JSON.parse(event.data);
+                label = `Build failed — fixing automatically (attempt ${attempt}/${max_attempts})…`;
+              } catch {}
+              appendToLastAssistantMessage(`\n\n---\n_${label}_\n\n`);
+              break;
+            }
+
             case "error":
             case "sandbox_error":
               setToastError(event.data || "An error occurred");

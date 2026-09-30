@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # ── Anthropic / Claude ───────────────────────────────────────────────────
     anthropic_api_key: str = ""
-    claude_model: str = "claude-sonnet-4-6"
+    claude_model: str = "claude-sonnet-5-5"
     claude_max_tokens: int = 8192
 
     # ── Google Gemini ────────────────────────────────────────────────────────
@@ -46,7 +46,14 @@ class Settings(BaseSettings):
     script_timeout_seconds: int = 60
     max_script_size_bytes: int = 51200         # 50 KB
     max_stl_size_bytes: int = 52428800         # 50 MB
-    max_virtual_memory_bytes: int = 536870912  # 512 MB
+    # Address-space cap (RLIMIT_AS), not RSS. Importing CadQuery/OCCT alone maps
+    # ~1.1 GB of virtual memory, so anything under ~1.5 GB kills every build.
+    max_virtual_memory_bytes: int = 4294967296  # 4 GB
+
+    # ── Self-repair ──────────────────────────────────────────────────────────
+    # How many times a failed build is fed back to the model for an automatic
+    # fix before the error is surfaced to the user. 0 disables the loop.
+    auto_repair_attempts: int = 2
 
     # ── Rate limiting ────────────────────────────────────────────────────────
     chat_rate_limit: str = "10/minute"

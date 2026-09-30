@@ -34,7 +34,7 @@ export interface Session {
 }
 
 export interface ChatStreamEvent {
-  event: "delta" | "code_extracted" | "job_created" | "done" | "error" | "sandbox_error" | "heartbeat";
+  event: "delta" | "code_extracted" | "job_created" | "done" | "error" | "sandbox_error" | "repair" | "heartbeat";
   data: string;
 }
 

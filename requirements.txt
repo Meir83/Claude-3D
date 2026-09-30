@@ -3,3 +3,6 @@ cadquery
 trimesh
 pyrender
 Pillow
+# After installing the above, override pyrender's PyOpenGL==3.1.0 pin, which
+# cannot render headless on Linux (pip can't express this as a normal requirement):
+#   pip install "PyOpenGL==3.1.7"

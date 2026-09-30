@@ -140,6 +140,8 @@ async def execute_script(script: str, job_id: str) -> ExecutionResult:
             timeout=settings.script_timeout_seconds,
             env=env,
             preexec_fn=preexec,
+            # Relative paths in the script (e.g. its own export call) land in the job dir
+            cwd=str(script_path.parent),
         )
 
     try:

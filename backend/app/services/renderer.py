@@ -50,7 +50,8 @@ async def render_preview(job_id: str) -> bool:
                 "PATH": "/usr/local/bin:/usr/bin:/bin",
                 "PYTHONPATH": ":".join(sys.path),
                 "HOME": "/tmp",
-                "PYOPENGL_PLATFORM": "osmesa",  # CPU fallback for CI/headless
+                # CPU rendering on headless Linux; macOS/Windows use the native backend
+                **({"PYOPENGL_PLATFORM": "osmesa"} if sys.platform == "linux" else {}),
             },
         )
         return result.returncode

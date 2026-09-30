@@ -17,6 +17,9 @@ WORKDIR /app
 # Install Python dependencies first (layer cache)
 COPY backend/pyproject.toml ./
 RUN pip install --no-cache-dir -e ".[dev]"
+# pyrender pins PyOpenGL==3.1.0, which cannot create a headless OSMesa/EGL
+# context (missing OSMesaCreateContextAttribs). Override after the main install.
+RUN pip install --no-cache-dir "PyOpenGL==3.1.7"
 
 # Copy app source
 COPY backend/ ./backend/
