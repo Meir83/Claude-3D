@@ -25,3 +25,7 @@ frontend/test-results/
 .DS_Store
 *.swp
 Thumbs.db
+
+# Next.js generated
+next-env.d.ts
+*.tsbuildinfo

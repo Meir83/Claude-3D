@@ -80,7 +80,17 @@ uvicorn app.main:app --reload     # http://localhost:8000/api/docs
 cd ../frontend && npm install && npm run dev   # http://localhost:3000
 ```
 
-Tests: `cd backend && pytest`.
+Or run both with Docker (includes the headless OpenGL setup):
+
+```bash
+cp .env.example .env
+docker compose -f docker/docker-compose.yml up --build   # http://localhost:3000
+```
+
+The compose file points the backend at an Ollama on the host
+(`host.docker.internal:11434`) if you use the free local provider.
+
+Tests: `cd backend && pytest` and `cd frontend && npm test`.
 
 ## Why CadQuery and not Blender?
 

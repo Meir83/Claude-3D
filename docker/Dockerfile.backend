@@ -1,40 +1,51 @@
 # Backend Dockerfile
-# Uses Python 3.11 (CadQuery requires 3.10-3.12)
-FROM python:3.11-slim
+# CadQuery's OCC kernel has wheels for Python 3.10-3.12 only.
+# Pinned to bookworm: newer Debian releases dropped some Mesa package names.
+FROM python:3.12-slim-bookworm
 
-# System dependencies for CadQuery (OpenCASCADE) and pyrender (EGL)
+# Runtime libraries for CadQuery (OpenCASCADE) and headless pyrender (OSMesa)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
     libglu1-mesa \
-    libgl1-mesa-glx \
-    libegl1-mesa \
-    libgles2-mesa \
+    libegl1 \
     libosmesa6 \
+    libxrender1 \
     libgomp1 \
+    # Font for preview labels (PIL's built-in font has no "³")
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-# Install Python dependencies first (layer cache)
+# Layout mirrors the repo: the app finds SKILL.md, design-review.md and
+# preview.py one level above backend/.
+WORKDIR /app/backend
+
+# Install dependencies first (layer cache). A stub package lets the editable
+# install resolve before the real source is copied in.
 COPY backend/pyproject.toml ./
-RUN pip install --no-cache-dir -e ".[dev]"
-# pyrender pins PyOpenGL==3.1.0, which cannot create a headless OSMesa/EGL
-# context (missing OSMesaCreateContextAttribs). Override after the main install.
-RUN pip install --no-cache-dir "PyOpenGL==3.1.7"
+RUN mkdir app && touch app/__init__.py \
+    && pip install -e ".[mcp]" \
+    # pyrender pins PyOpenGL==3.1.0, which cannot create a headless OSMesa
+    # context (missing OSMesaCreateContextAttribs). Override it.
+    && pip install "PyOpenGL==3.1.7"
 
-# Copy app source
-COPY backend/ ./backend/
-COPY SKILL.md design-review.md preview.py ./
+COPY SKILL.md design-review.md preview.py /app/
+COPY backend/app ./app
 
-# Create storage directory
-RUN mkdir -p ./backend/storage/jobs
-
-# Non-root user for security
-RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app
+# Non-root user; storage/ is the volume mount point for jobs + SQLite DB
+RUN useradd -m -u 1001 appuser \
+    && mkdir -p storage/jobs \
+    && chown -R appuser:appuser storage
 USER appuser
 
-ENV PYTHONPATH=/app
-ENV PYOPENGL_PLATFORM=egl
+ENV PYOPENGL_PLATFORM=osmesa
 
 EXPOSE 8000
 
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=5)"
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

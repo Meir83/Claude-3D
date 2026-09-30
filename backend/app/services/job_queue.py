@@ -28,6 +28,10 @@ class JobQueue:
     async def dequeue(self) -> str:
         return await self._queue.get()
 
+    def depth(self) -> int:
+        """Number of jobs waiting to be picked up."""
+        return self._queue.qsize()
+
     def task_done(self) -> None:
         self._queue.task_done()
 

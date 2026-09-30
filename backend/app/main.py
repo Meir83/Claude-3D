@@ -14,6 +14,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.config import settings
 from app.database import create_tables
 from app.routers import chat, jobs, files, providers
+from app.services.job_queue import job_queue
 from app.utils.rate_limit import limiter
 from app.workers.cad_worker import start_workers
 
@@ -82,6 +83,5 @@ async def health() -> JSONResponse:
     return JSONResponse({
         "status": "ok",
         "version": "0.1.0",
-        "queue_depth": app.state.limiter._storage._storage.__class__.__name__
-        if hasattr(app.state, "limiter") else "unknown",
+        "queue_depth": job_queue.depth(),
     })

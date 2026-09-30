@@ -1,7 +1,10 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Self-contained server bundle for the Docker image (.next/standalone)
+  output: "standalone",
   async rewrites() {
+    // Note: rewrites are resolved at build time, so BACKEND_URL must be set
+    // when running `next build` (the Dockerfile takes it as a build arg).
     return [
       {
         source: "/api/:path*",

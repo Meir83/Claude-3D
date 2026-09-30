@@ -41,8 +41,13 @@ def _set_rlimits() -> None:
             resource.RLIMIT_FSIZE,
             (settings.max_stl_size_bytes, settings.max_stl_size_bytes),
         )
-        # No spawning subprocesses
-        resource.setrlimit(resource.RLIMIT_NPROC, (0, 0))
+        # Cap processes/threads (fork-bomb guard). Not 0: OCCT meshes STL
+        # exports on a thread pool and deadlocks if it cannot start threads.
+        # The count is per user, so it must leave room for the server's own.
+        resource.setrlimit(
+            resource.RLIMIT_NPROC,
+            (settings.max_processes, settings.max_processes),
+        )
     except Exception:
         pass  # Non-Linux or missing permissions — best-effort
 
@@ -123,8 +128,10 @@ async def execute_script(script: str, job_id: str) -> ExecutionResult:
         "PYTHONPATH": ":".join(sys.path),
         "HOME": "/tmp",
         "TMPDIR": "/tmp",
-        # Pyrender headless on Linux
-        "PYOPENGL_PLATFORM": "egl",
+        # One CadQuery build shouldn't grab every core via BLAS/OpenMP pools.
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
     }
 
     preexec = _set_rlimits if sys.platform == "linux" else None

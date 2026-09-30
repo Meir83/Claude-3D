@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     # Address-space cap (RLIMIT_AS), not RSS. Importing CadQuery/OCCT alone maps
     # ~1.1 GB of virtual memory, so anything under ~1.5 GB kills every build.
     max_virtual_memory_bytes: int = 4294967296  # 4 GB
+    # RLIMIT_NPROC: processes + threads for the whole user, server included
+    max_processes: int = 512
 
     # ── Self-repair ──────────────────────────────────────────────────────────
     # How many times a failed build is fed back to the model for an automatic
