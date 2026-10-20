@@ -13,8 +13,15 @@ import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 W, H, FPS, SS = 1280, 720, 30, 2
-SCENE, N = 4.5, 8
-TOTAL = SCENE * N
+N = 8
+TL = None  # timeline (slide durations + narration timing), see narration.py
+
+
+def load_timeline():
+    global TL
+    import narration
+    TL = narration.build(os.path.join(narration.HERE, "_tts"))
+    return TL
 
 FB = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 FR = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -199,10 +206,10 @@ def bg(i):
         floor_grid(c, 0.78, (150, 90, 255, 35))
     elif i == 4:
         for gx in range(120, 1220, 80):
-            c.line([(gx, 90), (gx, 610)], (150, 100, 255, 28), 1)
-        for gy in range(90, 620, 52):
+            c.line([(gx, 90), (gx, 560)], (150, 100, 255, 28), 1)
+        for gy in range(90, 570, 52):
             c.line([(110, gy), (1180, gy)], (150, 100, 255, 28), 1)
-        c.line([(140, 90), (140, 610), (1180, 610)], (205, 170, 255, 130), 3)
+        c.line([(140, 90), (140, 560), (1180, 560)], (205, 170, 255, 130), 3)
     elif i == 5:
         floor_grid(c, 0.75, (150, 90, 255, 38))
     elif i == 6:
@@ -653,7 +660,7 @@ def scene4(c, g, t):
 
 def curve_pt(u):
     x = 150 + u * 960
-    y = 600 - 345 * (0.12 * u + 0.88 * u ** 2.3) + 9 * math.sin(u * 16) * (1 - u * 0.5)
+    y = 548 - 320 * (0.12 * u + 0.88 * u ** 2.3) + 9 * math.sin(u * 16) * (1 - u * 0.5)
     return x, y
 
 
@@ -672,7 +679,7 @@ def scene5(c, g, t):
     if p > 0.003:
         n = max(2, int(p * 120))
         pts = [curve_pt(p * i / n) for i in range(n + 1)]
-        c.poly(pts + [(pts[-1][0], 610), (pts[0][0], 610)], fill=(124, 58, 237, 48))
+        c.poly(pts + [(pts[-1][0], 560), (pts[0][0], 560)], fill=(124, 58, 237, 48))
         g.line(pts, (170, 90, 255), 14)
         c.line(pts, (150, 80, 255), 12)
         c.line(pts, (225, 200, 255), 4)
@@ -711,7 +718,7 @@ def scene5(c, g, t):
             a = ease((p - thr) * 12)
             x, y = curve_pt(thr)
             w = 14 * len(lab) * 0.62 + 34
-            off = 70
+            off = 56
             c.line([(x, y + 8), (x + 10, y + off - 16)], (205, 170, 255, int(120 * a)), 2)
             c.rr(x + 10 - w / 2, y + off - 16, x + 10 + w / 2, y + off + 16, 16, fill=(40, 24, 80, int(235 * a)),
                  outline=(205, 170, 255, int(255 * a)), w=2)
@@ -760,8 +767,8 @@ def hex_sprite():
 
 def scene6(c, g, t):
     ambient(c, g, t, 61)
-    gx, gy = 800, 240 + bob(t, 8, 0.4)
-    scx, scy = 800, 463 + bob(t, 8, 0.4)
+    gx, gy = 800, 205 + bob(t, 8, 0.4)
+    scx, scy = 800, 428 + bob(t, 8, 0.4)
     # incoming threats
     rnd = random.Random(6)
     for i in range(14):
@@ -1004,6 +1011,42 @@ TITLES = [
 ]
 
 
+def wrap_rtl(text, size, maxw):
+    f = F(FB, size)
+    lines, cur = [], ""
+    for w in text.split(" "):
+        trial = (cur + " " + w).strip()
+        if cur and f.getlength(trial, direction="rtl", language="he") > maxw:
+            lines.append(cur)
+            cur = w
+        else:
+            cur = trial
+    lines.append(cur)
+    return lines
+
+
+def caption(c, si, t):
+    sl = TL["slides"][si]
+    cur = None
+    for it in sl["sentences"]:
+        if it["t0"] - 0.05 <= t:
+            cur = it
+    if cur is None or t > cur["t1"] + 0.7:
+        return
+    a = ease((t - cur["t0"] + 0.05) / 0.25) * (1 - ease((t - cur["t1"] - 0.3) / 0.4))
+    if a <= 0.01:
+        return
+    size = 29
+    lines = wrap_rtl(cur["caption"], size, 960)
+    hbox = 26 + len(lines) * 40
+    y1 = 664
+    c.rr(130, y1 - hbox, 1150, y1, 18, fill=(10, 6, 28, int(205 * a)), outline=(168, 85, 247, int(170 * a)), w=2)
+    for i, ln in enumerate(lines):
+        y = y1 - hbox + 13 + 20 + i * 40
+        c.d.text((640 * c.k, y * c.k), ln, font=F(FB, size * c.k), fill=(255, 255, 255, int(255 * a)),
+                 anchor="mm", direction="rtl", language="he")
+
+
 def overlay(c, si, t):
     a = ease((t - 0.15) / 0.5)
     off = (1 - ease((t - 0.15) / 0.6)) * -50
@@ -1015,20 +1058,28 @@ def overlay(c, si, t):
     c.text((x, 152), sub, FR, 22, (205, 170, 255, int(235 * a)), "lm")
     for i in range(N):
         cx = W / 2 + (i - (N - 1) / 2) * 24
-        c.circ(cx, H - 26, 5 if i != si else 7, fill=(205, 170, 255, 255 if i == si else 90))
+        c.circ(cx, H - 22, 4 if i != si else 6, fill=(205, 170, 255, 255 if i == si else 90))
+    caption(c, si, t)
+
+
+def locate(T):
+    for si, sl in enumerate(TL["slides"]):
+        if T < sl["start"] + sl["dur"] or si == N - 1:
+            return si, T - sl["start"]
 
 
 def render_frame(fi):
     T = fi / FPS
-    si = min(int(T // SCENE), N - 1)
-    t = T - si * SCENE
+    si, t = locate(T)
+    dur = TL["slides"][si]["dur"]
+    ts = clamp(4.2 / dur, 0.45, 1.0)  # slow the animation down to match the longer voice-over
     c = Cv(W, H, SS, bg(si).copy())
     g = Cv(W, H, 0.5)
-    SCENES[si](c, g, t)
+    SCENES[si](c, g, t * ts)
     c.add_glow(g)
     overlay(c, si, t)
     im = c.im.reduce(SS)
-    a = min(1.0, t / 0.35, (SCENE - t) / 0.35)
+    a = min(1.0, t / 0.35, (dur - t) / 0.35)
     if a < 1:
         im = Image.blend(Image.new("RGB", im.size, (0, 0, 0)), im, clamp(a))
     return im.tobytes()
@@ -1037,52 +1088,65 @@ def render_frame(fi):
 # ------------------------------------------------------------------- audio
 def make_audio(path):
     sr = 44100
-    n = int(TOTAL * sr)
+    total = TL["total"]
+    n = int(total * sr) + sr
     x = np.arange(n) / sr
-    out = np.zeros(n)
+    music = np.zeros(n)
     chords = [(220.0, 261.6, 329.6), (174.6, 220.0, 261.6), (261.6, 329.6, 392.0), (196.0, 246.9, 293.7)]
-    for si in range(N):
+    for si, sl in enumerate(TL["slides"]):
         ch = chords[si % 4]
-        i0, i1 = int(si * SCENE * sr), int((si + 1) * SCENE * sr)
-        tt = x[i0:i1] - si * SCENE
-        env = np.minimum(1, tt / 0.8) * np.minimum(1, (SCENE - tt) / 0.8)
+        i0, i1 = int(sl["start"] * sr), int((sl["start"] + sl["dur"]) * sr)
+        tt = x[i0:i1] - sl["start"]
+        env = np.minimum(1, tt / 0.8) * np.minimum(1, (sl["dur"] - tt) / 0.8)
         seg = np.zeros(i1 - i0)
         for f in ch:
             for det in (0.997, 1.0, 1.003):
                 seg += np.sin(2 * np.pi * f * det * tt + 0.3 * np.sin(2 * np.pi * 0.2 * tt))
             seg += 0.4 * np.sin(2 * np.pi * f * 2 * tt)
-        seg *= env * 0.035
-        # soft plucks
-        for k, f in enumerate([ch[2] * 2, ch[1] * 2, ch[2] * 2, ch[0] * 4]):
-            t0 = 0.35 + k * 1.0
+        seg *= env * 0.03
+        notes = [ch[2] * 2, ch[1] * 2, ch[2] * 2, ch[0] * 4]
+        for k in range(int(sl["dur"] / 1.5)):
+            t0 = 0.35 + k * 1.5
             m = tt > t0
             pl = np.zeros_like(tt)
-            pl[m] = np.sin(2 * np.pi * f * (tt[m] - t0)) * np.exp(-(tt[m] - t0) * 3.0)
-            seg += pl * 0.05 * env
-        out[i0:i1] += seg
-    out = np.tanh(out * 1.4) * 0.8
+            pl[m] = np.sin(2 * np.pi * notes[k % 4] * (tt[m] - t0)) * np.exp(-(tt[m] - t0) * 3.0)
+            seg += pl * 0.035 * env
+        music[i0:i1] += seg
+    voice = np.zeros(n)
+    for sl in TL["slides"]:
+        for it in sl["sentences"]:
+            with wave.open(it["wav"]) as w:
+                raw = np.frombuffer(w.readframes(w.getnframes()), "<i2").astype(float) / 32768
+                r = w.getframerate()
+            up = np.interp(np.arange(int(len(raw) * sr / r)) / sr * r, np.arange(len(raw)), raw)
+            i0 = int((sl["start"] + it["t0"]) * sr)
+            voice[i0:i0 + len(up)] += up
+    peak = max(1e-6, np.abs(voice).max())
+    out = np.tanh(music * 1.4) * 0.5 + voice / peak * 0.85
+    out = out[: int(total * sr)]
     st = np.stack([out, out], 1)
     with wave.open(path, "wb") as w:
         w.setnchannels(2)
         w.setsampwidth(2)
         w.setframerate(sr)
-        w.writeframes((st * 32767).astype("<i2").tobytes())
+        w.writeframes((np.clip(st, -1, 1) * 32767).astype("<i2").tobytes())
 
 
 def main():
+    load_timeline()
     if len(sys.argv) >= 3 and sys.argv[1] == "--stills":
         d = sys.argv[2]
         os.makedirs(d, exist_ok=True)
         times = [float(a) for a in sys.argv[3:]] or [3.0]
-        for si in range(N):
+        for si, sl in enumerate(TL["slides"]):
             for tl in times:
-                fi = int((si * SCENE + tl) * FPS)
+                fi = int((sl["start"] + tl) * FPS)
                 Image.frombytes("RGB", (W, H), render_frame(fi)).save("%s/s%d_%.1f.png" % (d, si + 1, tl))
         return
     out = sys.argv[1] if len(sys.argv) > 1 else "vote_for_ghost.mp4"
     wav = out + ".wav"
     make_audio(wav)
-    nf = int(TOTAL * FPS)
+    nf = int(TL["total"] * FPS)
     ff = subprocess.Popen(
         ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", "%dx%d" % (W, H),
          "-r", str(FPS), "-i", "-", "-i", wav, "-c:v", "libx264", "-preset", "medium", "-crf", "19",
