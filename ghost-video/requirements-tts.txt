@@ -1,0 +1,10 @@
+# Neural Hebrew TTS (TTS_ENGINE=phonikud or mms). Needs huggingface.co access.
+numpy
+huggingface_hub
+# phonikud engine
+phonikud-onnx
+phonikud
+piper-onnx
+# mms engine
+transformers
+torch
