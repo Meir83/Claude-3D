@@ -1,3 +1,4 @@
 _tts/
 render.log
 *.wav
+*.onnx
